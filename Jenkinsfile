@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         VERSION = "1.0.${BUILD_NUMBER}"
-        PATH = "${PATH}:${getSonarPath()}:${getDockerPath()}"
+        PATH = "${PATH}:${getDockerPath()}"
     }
 
     stages {
@@ -61,10 +61,10 @@ pipeline {
 
 
 
-def getSonarPath(){
-        def SonarHome= tool name: 'sonarqube', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-        return SonarHome
-    }
+// def getSonarPath(){
+//         def SonarHome= tool name: 'sonarqube', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+//         return SonarHome
+//     }
 def getDockerPath(){
         def DockerHome= tool name: 'docker-inst', type: 'dockerTool'
         return DockerHome
