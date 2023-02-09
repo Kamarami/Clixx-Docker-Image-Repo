@@ -12,7 +12,7 @@
          local_action:
            module: rds
            command: restore
-           snapshot: '{{db_snapshot }}'
+           snapshot: '{{ db_snapshot }}'
            instance_name: '{{ instance_id }}'
            region: us-east-1
            wait: yes
