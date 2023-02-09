@@ -3,7 +3,8 @@ pipeline {
 
     environment {
         VERSION = "1.0.${BUILD_NUMBER}"
-        PATH = "${PATH}:${getSonarPath()}:${getDockerPath()}"
+        PATH = "${PATH}:${getDockerPath()}"
+        // PATH = "${PATH}:${getSonarPath()}:${getDockerPath()}"
     }
 
     stages {
