@@ -81,9 +81,9 @@ pipeline {
             slackSend (color: '#FFFF00', message: "STARTING APPLICATION FOR TESTING ${env.RUNNER}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
               sh '''
                SERVER_IP=$(curl -s http://checkip.dyndns.org | sed -e 's/.*Current IP Address: //' -e 's/<.*$//')
-               echo "use $DBNAME;" >> $WORKSPACE/db.setup
-               echo "UPDATE wp_options SET option_value = '$SERVER_IP' WHERE option_value LIKE 'http%';">> $WORKSPACE/db.setup
-               mysql -u $USERNAME --password=$PASSWORD -h $SERVER_INSTANCE -D $DBNAME < $WORKSPACE/db.setup
+               echo "use $DBNAME;" >> ${WORKSPACE}/db.setup
+               echo "UPDATE wp_options SET option_value = 'http://$SERVER_IP' WHERE option_value LIKE 'http%';">> ${WORKSPACE}/db.setup
+               mysql -u ${USERNAME} --password=${PASSWORD} -h ${SERVER_INSTANCE} -D ${DBNAME} < ${WORKSPACE}/db.setup
 
               '''
             }
