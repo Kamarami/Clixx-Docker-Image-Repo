@@ -121,6 +121,7 @@ pipeline {
                 docker tag clixx-image:$VERSION $URI:clixx-image-$VERSION
                 docker push $URI:clixx-image-$VERSION
               '''
+            }
           }
         }
     }
@@ -134,4 +135,3 @@ def getDockerPath(){
         def DockerHome= tool name: 'docker-inst', type: 'dockerTool'
         return DockerHome
     }
-    
