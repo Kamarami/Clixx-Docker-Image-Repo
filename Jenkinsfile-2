@@ -111,6 +111,7 @@ pipeline {
 
         stage ('Log Into ECR and push the newly created Docker') {
           steps {
+            withCredentials([string(credentialsId: 'URI', variable: 'URI')]) {
             slackSend (color: '#FFFF00', message: "PUSHING DOCKER IMAGE TO ECR ${env.RUNNER}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
              script {
                 def userInput = input(id: 'confirm', message: 'Push Image To ECR?', parameters: [ [$class: 'BooleanParameterDefinition', defaultValue: false, description: 'Push to ECR?', name: 'confirm'] ])
