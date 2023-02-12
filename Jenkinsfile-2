@@ -5,7 +5,7 @@ pipeline {
         VERSION = "1.0.${BUILD_NUMBER}"
         PATH = "${PATH}:${getDockerPath()}"
         // PATH = "${PATH}:${getSonarPath()}:${getDockerPath()}"
-        RUNNER = "Mohamed"
+        RUNNER = "${RUNNER}"
     }
 
     stages {
@@ -119,7 +119,9 @@ pipeline {
               sh '''
                 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 597529641504.dkr.ecr.us-east-1.amazonaws.com/clixx-repository
                 docker tag clixx-image:$VERSION $URI:clixx-image-$VERSION
+                docker tag clixx-image:$VERSION $URI:latest
                 docker push $URI:clixx-image-$VERSION
+                docker push $URI:latest
               '''
             }
           }
