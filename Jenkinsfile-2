@@ -31,97 +31,98 @@ pipeline {
   //       }
   //     }
   //   }
-
-  stage ('Build Docker Image') {
-    steps {
-      // script{
-      //  dockerHome= tool 'docker-inst'
-      // }
-      //  sh "${dockerHome}/bin/docker build . -t clixx-image:$VERSION "
-      sh "docker build . -t clixx-image:$VERSION "
+  stages {
+    stage ('Build Docker Image') {
+      steps {
+        // script{
+        //  dockerHome= tool 'docker-inst'
+        // }
+        //  sh "${dockerHome}/bin/docker build . -t clixx-image:$VERSION "
+        sh "docker build . -t clixx-image:$VERSION "
+      }
     }
-  }
 
-  stage ('Starting Docker Image') {
-    steps {
-      slackSend (color: '#FFFF00', message: "STARTING DOCKER IMAGE PIPELINE BUILD ${env.RUNNER}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
-      sh '''
-      if ( docker ps|grep clixx-cont ) then
-        echo "Docker image exists, killing it"
-        docker stop clixx-cont
-        docker rm clixx-cont
-        docker run --name clixx-cont  -p 80:80 -d clixx-image:$VERSION
-      else
-        docker run --name clixx-cont  -p 80:80 -d clixx-image:$VERSION 
-      fi
-      '''
-    }
-  }
-
-  stage ('Restore CliXX Database') {
-    steps {
-      slackSend (color: '#FFFF00', message: "CREATING & STARTING DOCKER IMAGE ${env.RUNNER}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+    stage ('Starting Docker Image') {
+      steps {
+        slackSend (color: '#FFFF00', message: "STARTING DOCKER IMAGE PIPELINE BUILD ${env.RUNNER}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
         sh '''
-      python3 -m venv python3-virtualenv
-      source python3-virtualenv/bin/activate
-      python3 -m pip install --upgrade pip
-      python3 --version
-      pip3 install boto3 botocore boto ansible
-      ansible-playbook $WORKSPACE/deploy_db_ansible/deploy_db.yml
-      deactivate
-
-        '''
-    }
-  }
-
-  stage ('Configure DB Instance') {
-    steps {
-      withCredentials([string(credentialsId: 'USERNAME', variable: 'USERNAME'), string(credentialsId: 'PASSWORD', variable: 'PASSWORD'), string(credentialsId: 'DBNAME', variable: 'DBNAME'), string(credentialsId: 'SERVER_INSTANCE', variable: 'SERVER_INSTANCE')]) {
-        slackSend (color: '#FFFF00', message: "STARTING APPLICATION FOR TESTING ${env.RUNNER}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
-        sh '''
-          SERVER_IP=$(curl -s http://checkip.dyndns.org | sed -e 's/.*Current IP Address: //' -e 's/<.*$//')
-          echo "use wordpressdb;" >> $WORKSPACE/db.setup
-          echo "UPDATE wp_options SET option_value = '$SERVER_IP' WHERE option_value LIKE 'http%';">> $WORKSPACE/db.setup
-          mysql -u ${USERNAME} --password=${PASSWORD} -h ${SERVER_INSTANCE} -D ${DBNAME} < ${WORKSPACE}/db.setup
+        if ( docker ps|grep clixx-cont ) then
+          echo "Docker image exists, killing it"
+          docker stop clixx-cont
+          docker rm clixx-cont
+          docker run --name clixx-cont  -p 80:80 -d clixx-image:$VERSION
+        else
+          docker run --name clixx-cont  -p 80:80 -d clixx-image:$VERSION 
+        fi
         '''
       }
     }
-  }
 
-  stage ('Tear Down CliXX Docker Image and Database') {
-    steps {
-      slackSend (color: '#FFFF00', message: "TEARING DOWN TEST APPLICAITON ${env.RUNNER}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
-      script {
-        def userInput = input(id: 'confirm', message: 'Tear Down Environment?', parameters: [ [$class: 'BooleanParameterDefinition', defaultValue: false, description: 'Tear Down Environment?', name: 'confirm'] ])
+    stage ('Restore CliXX Database') {
+      steps {
+        slackSend (color: '#FFFF00', message: "CREATING & STARTING DOCKER IMAGE ${env.RUNNER}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+          sh '''
+        python3 -m venv python3-virtualenv
+        source python3-virtualenv/bin/activate
+        python3 -m pip install --upgrade pip
+        python3 --version
+        pip3 install boto3 botocore boto ansible
+        ansible-playbook $WORKSPACE/deploy_db_ansible/deploy_db.yml
+        deactivate
+
+          '''
       }
-      sh '''
-      python3 -m venv python3-virtualenv
-      source python3-virtualenv/bin/activate
-      python3 --version
-      pip3 install boto3 botocore boto
-      ansible-playbook $WORKSPACE/deploy_db_ansible/delete_db.yml
-      deactivate
-      docker stop clixx-cont
-      docker rm  clixx-cont
-
-        '''
     }
-  }
 
-  stage ('Log Into ECR and push the newly created Docker') {
-    steps {
-      withCredentials([string(credentialsId: 'URI', variable: 'URI')]) {
-      slackSend (color: '#FFFF00', message: "PUSHING DOCKER IMAGE TO ECR ${env.RUNNER}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+    stage ('Configure DB Instance') {
+      steps {
+        withCredentials([string(credentialsId: 'USERNAME', variable: 'USERNAME'), string(credentialsId: 'PASSWORD', variable: 'PASSWORD'), string(credentialsId: 'DBNAME', variable: 'DBNAME'), string(credentialsId: 'SERVER_INSTANCE', variable: 'SERVER_INSTANCE')]) {
+          slackSend (color: '#FFFF00', message: "STARTING APPLICATION FOR TESTING ${env.RUNNER}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+          sh '''
+            SERVER_IP=$(curl -s http://checkip.dyndns.org | sed -e 's/.*Current IP Address: //' -e 's/<.*$//')
+            echo "use wordpressdb;" >> $WORKSPACE/db.setup
+            echo "UPDATE wp_options SET option_value = '$SERVER_IP' WHERE option_value LIKE 'http%';">> $WORKSPACE/db.setup
+            mysql -u ${USERNAME} --password=${PASSWORD} -h ${SERVER_INSTANCE} -D ${DBNAME} < ${WORKSPACE}/db.setup
+          '''
+        }
+      }
+    }
+
+    stage ('Tear Down CliXX Docker Image and Database') {
+      steps {
+        slackSend (color: '#FFFF00', message: "TEARING DOWN TEST APPLICAITON ${env.RUNNER}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
         script {
-          def userInput = input(id: 'confirm', message: 'Push Image To ECR?', parameters: [ [$class: 'BooleanParameterDefinition', defaultValue: false, description: 'Push to ECR?', name: 'confirm'] ])
+          def userInput = input(id: 'confirm', message: 'Tear Down Environment?', parameters: [ [$class: 'BooleanParameterDefinition', defaultValue: false, description: 'Tear Down Environment?', name: 'confirm'] ])
         }
         sh '''
-        aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 597529641504.dkr.ecr.us-east-1.amazonaws.com/clixx-repository
-        docker tag clixx-image:$VERSION $URI:clixx-image-$VERSION
-        docker tag clixx-image:$VERSION $URI:latest
-        docker push $URI:clixx-image-$VERSION
-        docker push $URI:latest
-        '''
+        python3 -m venv python3-virtualenv
+        source python3-virtualenv/bin/activate
+        python3 --version
+        pip3 install boto3 botocore boto
+        ansible-playbook $WORKSPACE/deploy_db_ansible/delete_db.yml
+        deactivate
+        docker stop clixx-cont
+        docker rm  clixx-cont
+
+          '''
+      }
+    }
+
+    stage ('Log Into ECR and push the newly created Docker') {
+      steps {
+        withCredentials([string(credentialsId: 'URI', variable: 'URI')]) {
+        slackSend (color: '#FFFF00', message: "PUSHING DOCKER IMAGE TO ECR ${env.RUNNER}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+          script {
+            def userInput = input(id: 'confirm', message: 'Push Image To ECR?', parameters: [ [$class: 'BooleanParameterDefinition', defaultValue: false, description: 'Push to ECR?', name: 'confirm'] ])
+          }
+          sh '''
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 597529641504.dkr.ecr.us-east-1.amazonaws.com/clixx-repository
+          docker tag clixx-image:$VERSION $URI:clixx-image-$VERSION
+          docker tag clixx-image:$VERSION $URI:latest
+          docker push $URI:clixx-image-$VERSION
+          docker push $URI:latest
+          '''
+        }
       }
     }
   }
