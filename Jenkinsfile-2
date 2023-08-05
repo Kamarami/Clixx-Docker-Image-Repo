@@ -11,7 +11,7 @@ pipeline {
   // stages {
   //   stage ('Sonarcube Scan') {
   //     steps {
-  //       script {
+  //       script {R
   //         scannerHome = tool 'sonar-inst'
   //       }
   //       withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]){
